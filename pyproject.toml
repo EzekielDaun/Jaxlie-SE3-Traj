@@ -1,6 +1,6 @@
 [project]
 name = "jaxlie-se3-traj"
-version = "0.0.1"
+version = "0.0.2"
 description = "A collection of SE3 trajectories. With differentiable SE3 implementation from jaxlie"
 authors = [
     { name = "Yifei Liu", email = "34564223+EzekielDaun@users.noreply.github.com" },

@@ -75,7 +75,7 @@ def __7_seg_s_curve_jerk_sym_impl(x: Float, m: float, rho: float):
     return jnp.where(x <= 0.5, left_val, 1.0 - left_val)
 
 
-@partial(jax.jit, static_argnames=("m", "rho"))
+@partial(jax.jit, static_argnums=(1, 2))
 def seven_seg_s_curve(x: Float, m: float, rho: float):
     """Validated wrapper for jerk7 S-curve.
     Requirements: 1 < m <= 2 and 0 < rho <= 0.5. Raises ValueError if violated.

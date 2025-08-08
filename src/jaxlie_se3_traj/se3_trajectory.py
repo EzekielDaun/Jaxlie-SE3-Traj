@@ -54,11 +54,15 @@ class SE3Trajectory:
         )
         return cls(compiled, durations, start_times, end_times, total_time, directions)
 
-    def __call__(self, t: float) -> SE3:
-        return evaluate_se3_trajectory(
+    @property
+    def pose_fn(self) -> Callable[[float], SE3]:
+        return partial(
+            evaluate_se3_trajectory,
             self.compiled_deltas,
             self.start_times,
             self.durations,
             self.directions,
-            t,
         )
+
+    def __call__(self, t: float) -> SE3:
+        return self.pose_fn(t)

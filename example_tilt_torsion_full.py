@@ -1,28 +1,30 @@
 from functools import partial
+from typing import Callable
 
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 from jaxlie import SE3
+from jaxtyping import Float
 
 from example_utils import render_trajectory
 from jaxlie_se3_traj import (
-    BumpMethod,
     MultiplyDirection,
     SE3DeltaTiltTorsionFullSpace,
     SE3Trajectory,
-    bump_function,
 )
+from jaxlie_se3_traj.bump_method import linear
 
 if __name__ == "__main__":
+    common_factor = 5e3
     params = {
-        "bump_method": BumpMethod.LINEAR,
+        "bump_function": linear,
         "tilt_angle_amplitude": jnp.pi / 2,
-        "torsion_angle_amplitude": jnp.deg2rad(5),
-        "tilt_angle_frequency": 5e1,
-        "torsion_angle_frequency": 3e2 * 2**0.5,
-        "tilt_direction_wrap_frequency": 2e2 * 3**0.5,
+        "torsion_angle_amplitude": jnp.deg2rad(2.5),
+        "tilt_angle_frequency": common_factor,
+        "torsion_angle_frequency": common_factor * 2**0.5,
+        "tilt_direction_wrap_frequency": common_factor * 3**0.5,
     }
 
     trajectory = SE3Trajectory.from_deltas(
@@ -35,7 +37,7 @@ if __name__ == "__main__":
 
     def fn(
         s: float,
-        bump_method: BumpMethod,
+        bump_function: Callable[[Float], Float],
         tilt_direction_wrap_frequency: float,
         tilt_angle_amplitude: float,
         tilt_angle_frequency: float,
@@ -44,7 +46,7 @@ if __name__ == "__main__":
     ):
         tilt_direction_angle = tilt_direction_wrap_frequency * 2 * jnp.pi * s
 
-        bumped_s = bump_function(bump_method)(s)
+        bumped_s = bump_function(s)
 
         tilt_angle = (
             tilt_angle_amplitude
@@ -56,7 +58,9 @@ if __name__ == "__main__":
         )
         return jnp.array([torsion_angle, tilt_angle, tilt_direction_angle]).flatten()
 
-    ret = jax.vmap(partial(fn, **params))(jnp.linspace(0.0, 1.0, num=int(1e5)))
+    ret = jax.vmap(partial(fn, **params))(
+        jnp.linspace(0.0, 1.0, num=int(common_factor * 5e0))
+    )
     print(ret)
 
     fig = plt.figure(figsize=(12, 8))
@@ -67,7 +71,7 @@ if __name__ == "__main__":
     theta = ret[:, 2]
     x = r * np.cos(theta)
     y = r * np.sin(theta)
-    ax1.plot(x, y, z, marker=".", linestyle="None", alpha=0.01)
+    ax1.plot(x, y, z, marker=".", linestyle="None", alpha=(alpha := 0.1))
 
     data = np.array([x, y, z]).T
     data_diff = np.diff(data, axis=0)
@@ -78,7 +82,7 @@ if __name__ == "__main__":
         data_diff_normed[:, 2],
         marker=".",
         linestyle="None",
-        alpha=0.01,
+        alpha=alpha,
     )
     plt.show()
     plt.close()

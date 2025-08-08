@@ -1,4 +1,3 @@
-from .bump_method import BumpMethod, bump_function
 from .se3_delta_segments import (
     SE3DeltaLog,
     SE3DeltaTiltTorsionFullSpace,

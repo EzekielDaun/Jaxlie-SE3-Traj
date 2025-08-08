@@ -1,16 +1,15 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from functools import partial
 from typing import Callable
 
 import jax
 import jax.numpy as jnp
-import jax_dataclasses as jdc
+from jax.tree_util import Partial
 from jax_dataclasses import pytree_dataclass
 from jaxlie import SE3, SO3
 from jaxtyping import Float
 
-from .bump_method import BumpMethod, bump_function, mirror_mapping
+from .bump_method import mirror_mapping
 
 
 class MultiplyDirection(Enum):
@@ -18,11 +17,11 @@ class MultiplyDirection(Enum):
     LEFT = auto()
 
 
-@jdc.pytree_dataclass(frozen=True)
+@pytree_dataclass(frozen=True)
 class SE3DeltaBase(ABC):
     direction: MultiplyDirection
     duration: float
-    bump_method: BumpMethod
+    bump_function: Callable[[Float], Float]
 
     @abstractmethod
     def compile(self) -> Callable[[float], SE3]:
@@ -35,7 +34,7 @@ class SE3DeltaLog(SE3DeltaBase):
 
     def compile(self) -> Callable[[float], SE3]:
         log = jnp.array(self.delta_log)
-        bump_fn = bump_function(self.bump_method)
+        bump_fn = self.bump_function
         return lambda s: SE3.exp(bump_fn(s) * log)
 
 
@@ -45,7 +44,7 @@ class SE3DeltaTiltTorsionRolling(SE3DeltaBase):
 
     def compile(self) -> Callable[[float], SE3]:
         tilt = self.tilt_angle
-        bump_fn = bump_function(self.bump_method)
+        bump_fn = self.bump_function
 
         def fn(s):
             return SE3.from_rotation(
@@ -67,15 +66,7 @@ class SE3DeltaTiltTorsionSpiral(SE3DeltaBase):
     turns: int
 
     def compile(self) -> Callable[[float], SE3]:
-        def mirror_mapping(t: Float, f01: Callable[[Float], Float]) -> Float:
-            t = jnp.asarray(t)
-            return jnp.where(
-                t <= 0.5,
-                f01(2 * t),
-                f01(2 * (1 - t)),
-            )
-
-        bump_fn = partial(mirror_mapping, f01=bump_function(self.bump_method))
+        bump_fn = Partial(mirror_mapping, f01=self.bump_function)
 
         def fn(s):
             return SE3.from_rotation(
@@ -111,7 +102,7 @@ class SE3DeltaTiltTorsionFullSpace(SE3DeltaBase):
     tilt_direction_wrap_frequency: float
 
     def compile(self) -> Callable[[float], SE3]:
-        bump_fn = partial(mirror_mapping, f01=bump_function(self.bump_method))
+        bump_fn = Partial(mirror_mapping, f01=self.bump_function)
 
         def fn(s):
             tilt_direction_angle = self.tilt_direction_wrap_frequency * 2 * jnp.pi * s
