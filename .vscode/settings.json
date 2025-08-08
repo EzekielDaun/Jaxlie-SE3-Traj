@@ -1,8 +1,21 @@
 {
     "cSpell.words": [
+        "argnames",
+        "azim",
+        "figsize",
         "jaxlie",
         "jaxtyping",
+        "mplot",
         "pycache",
-        "traj"
+        "toolkits",
+        "traj",
+        "vmap",
+        "vmapped",
+        "xlabel",
+        "xlim",
+        "ylabel",
+        "ylim",
+        "zlabel",
+        "zlim"
     ]
 }
