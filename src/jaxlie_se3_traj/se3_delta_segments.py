@@ -105,20 +105,29 @@ class SE3DeltaTiltTorsionFullSpace(SE3DeltaBase):
         bump_fn = Partial(mirror_mapping, f01=self.bump_function)
 
         def fn(s):
-            tilt_direction_angle = self.tilt_direction_wrap_frequency * 2 * jnp.pi * s
+            tilt_direction_angle = (
+                self.tilt_direction_wrap_frequency * 2 * jnp.pi * s * self.duration / 2
+            )
 
             bumped_s = bump_fn(s)
 
             tilt_angle = (
                 self.tilt_angle_amplitude
                 * (
-                    jnp.cos(self.tilt_angle_frequency / 2 * 2 * jnp.pi * bumped_s**2)
+                    jnp.cos(
+                        self.tilt_angle_frequency
+                        * 2
+                        * jnp.pi
+                        * bumped_s
+                        * self.duration
+                        / 2
+                    )
                     - 1
                 )
                 / -2
             )
             torsion_angle = self.torsion_angle_amplitude * jnp.sin(
-                self.torsion_angle_frequency * 2 * jnp.pi * bumped_s**2
+                self.torsion_angle_frequency * 2 * jnp.pi * bumped_s * self.duration / 2
             )
             return tilt_torsion_twist_SE3(
                 torsion_angle, tilt_angle, tilt_direction_angle
